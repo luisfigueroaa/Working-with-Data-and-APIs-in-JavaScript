@@ -1,0 +1,80 @@
+<html>
+    <style>
+        body{
+            font-family: sans-serif;
+        }
+        #issMap { height: 180px; }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+    integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+    crossorigin=""/>
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+    integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+    crossorigin=""></script>
+    <title>Where is the ISS?</title>
+    <body>
+        <h1>Where is the ISS? / ¿Dónde está el ISS?</h1>
+
+        <p>
+            Latitude: <span id="lat"></span>°<br>
+            Longitude: <span id="lon"></span>°
+        </p>
+
+        <div id="issMap"></div>
+
+        <script>
+            // Colocar el Mapa y los 'tiles'
+            const mymap = L.map('issMap').setView([0, 0], 1);
+            const atribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+            const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            const tiles = L.tileLayer(tileUrl, {atribution});
+            tiles.addTo(mymap);
+
+            // Colocarle un icono y ajustarlo
+            var icon = L.icon({
+                iconUrl: 'iss200.png',
+                iconSize: [50, 38],
+                // Debo colocarlo al medio para que mi icono se centre en el punto
+                iconAnchor: [25, 19]
+            });
+            const marker = L.marker( [0, 0] , {icon: icon} ).addTo(mymap);
+
+            // La API del posicionamiento del satélite
+            const api_url = 'https://api.wheretheiss.at/v1/satellites/25544';
+
+            let firstTime = true;
+
+            // Colocar la función para que reciba los datos de la API
+            async function getISS() {
+                // Almacenar lo que esta dentro de la url en una response
+                const response = await fetch(api_url);
+                // Obtener la Data del response en formato Json
+                const data = await response.json();
+                // console.log(data.longitude);
+                // console.log(data.latitude);
+                const {latitude , longitude} = data;
+
+                // Marker de Latitude y Longitude
+                // L.marker([latitude, longitude]).addTo(mymap);
+                marker.setLatLng([latitude, longitude]);
+                // Hacer un artificio con firstTime para que solo arregle el zoom la primera vez que llama la función
+                if (firstTime) {
+                // Centrar el mapa en una longitud y latitud con un zoom de 3
+                    mymap.setView([latitude, longitude], 3);
+                    firstTime = false;
+                }
+
+                // Colocar los elementos de longitud y latitud dentro del html
+                document.getElementById('lat').textContent = latitude.toFixed(2);
+                document.getElementById('lon').textContent = longitude.toFixed(2);
+            }
+
+            // Llamar a la función.
+            getISS();
+
+            // Colcar un intervalo de 1 segundo a la función, para que vuelva a cargar
+            setInterval(getISS, 1000);
+        </script>
+    </body>
+</html>
